@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bed24 Room Booking</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Book Your Perfect Stay</h1>
+
+        <div class="booking-form">
+            <div class="form-group">
+                <label for="checkin">Check-in:</label>
+                <input type="date" id="checkin">
+            </div>
+
+            <div class="form-group">
+                <label for="checkout">Check-out:</label>
+                <input type="date" id="checkout">
+            </div>
+
+            <div class="form-group">
+                <label for="guests">Guests:</label>
+                <input type="number" id="guests" min="1" value="1">
+            </div>
+
+            <button class="search-btn" onclick="fetchRooms()">Search Rooms</button>
+        </div>
+
+        <div id="room-list" class="room-list"></div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
