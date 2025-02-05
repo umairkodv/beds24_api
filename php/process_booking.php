@@ -1,12 +1,12 @@
 <?php
-                           // Include the config file for API details
-require_once 'config.php'; // Make sure config.php is in the same directory or provide the correct path
+require_once 'config.php'; // Ensure the correct API details
 
-if (isset($_GET['success']) && $_GET['success'] == 'true') {
+// Check if payment was successful
+if (isset($_GET['payment_success']) && $_GET['payment_success'] == 'true') {
     // Collect form data from GET request
     $roomId   = $_GET['roomId'];
     $roomName = $_GET['roomName'];
-    $price    = $_GET['price'];
+    $price    = $_GET['totalPrice'];
     $checkin  = $_GET['checkin'];
     $checkout = $_GET['checkout'];
     $guests   = $_GET['guests'];
@@ -14,26 +14,36 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
     $email    = $_GET['email'];
     $phone    = $_GET['phone'];
 
-                                                  // Initialize Beds24 API call for booking
-    $beds24_url     = BED24_API_URL . "bookings"; // Use the constant from config.php
-    $beds24_api_key = BED24_API_TOKEN;            // Use the constant from config.php
+    // Debug: Ensure variables have correct values
+    echo "Room Name: " . $roomName . "<br>";
+    echo "Name: " . $name . "<br>";
+    echo "Price: " . $price . "<br>";
 
-    // Prepare the booking data
+                                                    // Initialize Beds24 API URL and API token
+    $beds24_url     = "https://beds24.com/api/v2/"; // Beds24 API base URL
+    $beds24_api_key = BED24_API_TOKEN;              // Use the token from config.php
+
+    // Prepare the booking data in the format that Beds24 expects
     $booking_data = [
-        'roomId'   => $roomId,
-        'checkin'  => $checkin,
-        'checkout' => $checkout,
-        'guests'   => $guests,
-        'name'     => $name,
-        'email'    => $email,
-        'phone'    => $phone,
-        'price'    => $price,
+        [
+            'roomId'    => $roomId,
+            'status'    => 'confirmed',
+            'arrival'   => $checkin,
+            'departure' => $checkout,
+            'numAdult'  => $guests,
+            'numChild'  => 0,
+            'title'     => 'Mr',
+            'firstName' => $name,
+            'lastName'  => '',
+            'email'     => $email,
+            'mobile'    => $phone,
+            'address'   => '',
+            'city'      => '',
+            'state'     => '',
+            'postcode'  => '',
+            'country'   => 'Australia',
+        ],
     ];
-
-    // Debug the booking data (Optional, can be removed in production)
-    // echo "<pre>";
-    // print_r($booking_data); // Check if all data is correctly prepared
-    // echo "</pre>";
 
     // Use cURL to send the booking data to Beds24 API
     $ch = curl_init($beds24_url);
@@ -45,37 +55,32 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($booking_data));
 
-    // Debugging: Show the headers sent
-    curl_setopt($ch, CURLOPT_HEADER, true);
-
-    $response = curl_exec($ch);
+    $response  = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Get HTTP status code
     curl_close($ch);
 
-    // Check if the booking was successful
-    if ($response === false) {
-        die("Error: Unable to make booking request.");
+    // Check if the response is empty
+    if (empty($response)) {
+        die("Error: Empty response from Beds24 API.");
     }
 
+    // Decode the JSON response
     $response_data = json_decode($response, true);
 
-    // Debug the full response from Beds24 (Optional)
-    // echo "<pre>";
-    // print_r($response_data); // Inspect full response from Beds24
-    // echo "</pre>";
-
-    // Check for errors in the response data
-    if (isset($response_data['error'])) {
-        die("Error: Booking failed on Beds24 API. " . $response_data['error']);
-    }
-
-    // Further check if response data contains an error code
-    if (isset($response_data['code'])) {
-        die("Error Code: " . $response_data['code'] . ". Message: " . $response_data['error']);
+    // Check for errors in the response
+    if (isset($response_data['errors']) && count($response_data['errors']) > 0) {
+        foreach ($response_data['errors'] as $error) {
+            die("Error: " . $error['message']);
+        }
     }
 
     // If no error, booking was successful
     // Redirect to the confirmation page with the necessary details
-    header("Location: confirmation.php?roomName=" . urlencode($roomName) . "&name=" . urlencode($name) . "&price=" . urlencode($price));
+    if (! empty($roomName) && ! empty($name) && ! empty($price)) {
+        header("Location: confirmation.php?roomName=" . urlencode($roomName) . "&name=" . urlencode($name) . "&price=" . urlencode($price));
+    } else {
+        die("Error: Missing data for redirect.");
+    }
     exit;
 } else {
     echo "Payment failed.";

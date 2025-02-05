@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Bed24 Booking</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script id="boxcoin" src="https://www.wunderbar24.com/bc_payment_test/js/client.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Complete Your Booking</h1>
+        <div id="booking-summary"></div>
+        
+        <div id="boxcoin-container">
+            <h3>Pay with Boxcoin</h3>
+            <center>
+                <div id="boxcoin-payment" data-bxc="" data-price="" data-external-reference=""></div>
+            </center>
+        </div>
+    </div>
+
+    <script>
+        // Function to get URL parameters
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                roomId: params.get('roomId'),
+                roomName: params.get('roomName'),
+                price: params.get('price'),
+                checkin: params.get('checkin'),
+                checkout: params.get('checkout'),
+                guests: params.get('guests'),
+            };
+        }
+
+        // Load booking details
+        const booking = getQueryParams();
+        document.getElementById('booking-summary').innerHTML = `
+            <p><strong>Room:</strong> ${booking.roomName}</p>
+            <p><strong>Check-in:</strong> ${booking.checkin}</p>
+            <p><strong>Check-out:</strong> ${booking.checkout}</p>
+            <p><strong>Guests:</strong> ${booking.guests}</p>
+            <p><strong>Total Price:</strong> $${booking.price}</p>
+        `;
+
+        // Set up Boxcoin payment widget
+        document.getElementById('boxcoin-payment').setAttribute('data-bxc', `custom-${booking.roomId}`);
+        document.getElementById('boxcoin-payment').setAttribute('data-price', booking.price);
+        document.getElementById('boxcoin-payment').setAttribute('data-external-reference', `booking-${booking.roomId}`);
+
+        // Stripe payment redirection
+        document.getElementById('payWithStripe').addEventListener('click', function () {
+            window.location.href = `stripe_checkout.php?roomId=${booking.roomId}&price=${booking.price}&checkin=${booking.checkin}&checkout=${booking.checkout}&guests=${booking.guests}`;
+        });
+    </script>
+</body>
+</html>

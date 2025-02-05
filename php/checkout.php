@@ -1,105 +1,68 @@
 <?php
-    if (! isset($_GET['roomId'], $_GET['roomName'], $_GET['price'], $_GET['checkin'], $_GET['checkout'], $_GET['guests'])) {
-        die("Invalid booking request.");
+    session_start(); // Start the session
+
+    // Check if the payment was successful by looking for Boxcoin response parameters
+    if (isset($_GET['cc'])) {
+        // Debugging: Check session variables
+        // Access session variables
+        $roomId        = $_SESSION['roomId'] ?? '';
+        $roomName      = $_SESSION['roomName'] ?? '';
+        $totalPrice    = $_SESSION['totalPrice'] ?? 0;
+        $checkin       = $_SESSION['checkin'] ?? '';
+        $checkout      = $_SESSION['checkout'] ?? '';
+        $guests        = $_SESSION['guests'] ?? 0;
+        $pricePerNight = $_SESSION['pricePerNight'] ?? 0;
+        $name          = $_SESSION['name'] ?? '';
+        $email         = $_SESSION['email'] ?? '';
+        $phone         = $_SESSION['phone'] ?? '';
+
+        // echo $name;
+        // die(); // You can remove this line after debugging
+
+        // Assuming 'cc' means payment success, redirect to process_booking.php with required details
+        header("Location: process_booking.php?payment_success=true&roomId=" . $roomId . "&roomName=" . urlencode($roomName) . "&totalPrice=" . $totalPrice . "&checkin=" . $checkin . "&checkout=" . $checkout . "&guests=" . $guests . "&name=" . urlencode($name) . "&email=" . $email . "&phone=" . $phone);
+        exit();
     }
-
-    $roomId   = htmlspecialchars($_GET['roomId']);
-    $roomName = htmlspecialchars($_GET['roomName']);
-    $price    = htmlspecialchars($_GET['price']);
-    $checkin  = htmlspecialchars($_GET['checkin']);
-    $checkout = htmlspecialchars($_GET['checkout']);
-    $guests   = htmlspecialchars($_GET['guests']);
 ?>
-<style>
-    .checkout-card p {
-    font-size: 18px;
-    margin: 10px 0;
-}
-
-/* Booking Form */
-.booking-form {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    text-align: left;
-}
-
-.booking-form .form-group {
-    margin-bottom: 15px;
-}
-
-.booking-form input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-/* Confirm Button */
-.confirm-btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    font-size: 18px;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 100%;
-    transition: 0.3s;
-}
-
-.confirm-btn:hover {
-    background: #0056b3;
-}
-
-</style>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <title>Payment</title>
 </head>
 <body>
-    <div class="container">
-        <h1 class="title">Confirm Your Booking</h1>
+    <h1 align="center">Complete Your Payment</h1>
 
-        <div class="checkout-card">
-            <p><strong>Room:</strong>                                                                                                                                                     <?php echo $roomName; ?></p>
-            <p><strong>Price:</strong> <span style="color: #ff7b00; font-weight: bold;">$<?php echo $price; ?></span> per night</p>
-            <p><strong>Check-in:</strong>                                                                                                                                                                     <?php echo $checkin; ?></p>
-            <p><strong>Check-out:</strong>                                                                                                                                                                         <?php echo $checkout; ?></p>
-            <p><strong>Guests:</strong>                                                                                                                                                             <?php echo $guests; ?></p>
-        </div>
-
-        <form class="booking-form" action="create_checkout_session.php" method="POST">
-            <input type="hidden" name="roomId" value="<?php echo $roomId; ?>">
-            <input type="hidden" name="roomName" value="<?php echo $roomName; ?>">
-            <input type="hidden" name="price" value="<?php echo $price; ?>">
-            <input type="hidden" name="checkin" value="<?php echo $checkin; ?>">
-            <input type="hidden" name="checkout" value="<?php echo $checkout; ?>">
-            <input type="hidden" name="guests" value="<?php echo $guests; ?>">
-
-            <div class="form-group">
-                <label for="name">Full Name:</label>
-                <input type="text" name="name" placeholder="Enter your full name" required>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" name="email" placeholder="Enter your email" required>
-            </div>
-
-            <div class="form-group">
-                <label for="phone">Phone:</label>
-                <input type="tel" name="phone" placeholder="Enter your phone number" required>
-            </div>
-
-            <button class="confirm-btn" type="submit">Proceed to Payment</button>
-        </form>
+    <div id="payment-container">
+        <script id="boxcoin" src="https://www.wunderbar24.com/bc_payment_test/js/client.js"></script>
+        <center>
+            <div id="boxcoin-payment"></div>
+        </center>
     </div>
+
+    <script>
+    // Retrieve session data
+    const externalReference = sessionStorage.getItem('external_reference');
+    const price = sessionStorage.getItem('price');
+
+    if (externalReference && price) {
+        // Dynamically add Boxcoin payment button
+        document.getElementById('boxcoin-payment').setAttribute("data-bxc", "custom-" + externalReference);
+        document.getElementById('boxcoin-payment').setAttribute("data-price", price);
+        document.getElementById('boxcoin-payment').setAttribute("data-external-reference", externalReference);
+
+        // Listen for payment success (Assuming Boxcoin triggers an event)
+        window.addEventListener("message", function(event) {
+            if (event.data && event.data.status === "success") {
+                window.location.href = "process_booking.php?payment_success=true&external_reference=" + externalReference;
+            }
+        }, false);
+    } else {
+        alert("Payment details not found. Please restart the booking process.");
+        window.location.href = "booking_process.php";
+    }
+</script>
+
 </body>
 </html>
